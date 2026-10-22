@@ -50,8 +50,17 @@ class Github:
         if not response:
             raise ValueError("Failed to fetch release information from GitHub.")
 
-        tag_name = self._extract_tag_name(response)
+        tag_name = self._extract_tag_name(response) or self._resolve_latest_tag(owner, repo)
         body = self._extract_body_content(response)
+
+        if not tag_name:
+            # Repository has no published GitHub Release (e.g. only git tags),
+            # so there are no downloadable assets to fetch.
+            print("No GitHub release found for {}/{}.".format(owner, repo))
+            return {
+                "body": body,
+                "assets": []
+            }
 
         release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(owner, repo, tag_name)
         response = self.fetcher.fetch_and_parse_content(release_tag_url)
@@ -65,6 +74,22 @@ class Github:
             "body": body,
             "assets": assets
         }
+
+    def _resolve_latest_tag(self, owner, repo):
+        # Some releases pages do not expose tag links in their HTML, but
+        # /releases/latest redirects to /releases/tag/<tag>, so use the redirect target.
+        response = self.fetcher._make_request("https://github.com/{}/{}/releases/latest".format(owner, repo))
+        if not response:
+            return None
+
+        try:
+            final_url = response.geturl()
+        finally:
+            response.close()
+
+        if "/releases/tag/" in final_url:
+            return final_url.split("/releases/tag/", 1)[1].split("?", 1)[0].split("#", 1)[0].rstrip("/") or None
+        return None
 
     def _extract_tag_name(self, response):
         for line in response.splitlines():
