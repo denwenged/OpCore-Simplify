@@ -18,7 +18,7 @@ class DSDT:
         self.iasl_url_macOS_legacy = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-legacy"
         self.iasl_url_linux = "https://raw.githubusercontent.com/corpnewt/linux_iasl/main/iasl.zip"
         self.iasl_url_linux_legacy = "https://raw.githubusercontent.com/corpnewt/iasl-legacy/main/iasl-legacy-linux.zip"
-        self.acpi_binary_tools = "https://github.com/acpica/acpica/releases"
+        self.acpi_binary_tools = "https://github.com/open-acpica/acpica/releases"
         self.iasl_url_windows_legacy = "https://raw.githubusercontent.com/corpnewt/iasl-legacy/main/iasl-legacy-windows.zip"
         self.h = {} # {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         self.iasl = self.check_iasl()
@@ -313,7 +313,8 @@ class DSDT:
         zfile = os.path.basename(url)
         #print("Downloading {}".format(os.path.basename(url)))
         #self.dl.stream_to_file(url, os.path.join(ztemp,zfile), progress=False, headers=self.h)
-        self.fetcher.download_and_save_file(url, os.path.join(ztemp,zfile))
+        if not self.fetcher.download_and_save_file(url, os.path.join(ztemp,zfile)):
+            raise Exception("Failed to download {}. Check your internet connection or proxy/firewall settings.".format(url))
         search_dir = ztemp
         if zfile.lower().endswith(".zip"):
             print(" - Extracting")
